@@ -21,7 +21,6 @@ target("english_complete")
 	add_files("res.qrc")
     --add_files("src/mainwindow.ui")
     -- add files with Q_OBJECT meta (only for qt.moc)
-    add_files("src/mainwindow.h")
 	add_deps("trie_tree")
 
 

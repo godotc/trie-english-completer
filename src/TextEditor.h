@@ -1,31 +1,34 @@
 #pragma once
 
+#include "qabstractitemview.h"
+#include "qcoreevent.h"
+#include "qlistview.h"
+#include "qobject.h"
+#include "qvector.h"
 #include <QApplication>
 #include <QCompleter>
-#include <QTextEdit>
-#include <qobject.h>
+#include <QObject>
+#include <QTreeWidget>
+#include <qplaintextedit.h>
 
-class TextEditor : public QTextEdit
+
+
+class TextEditor : public QPlainTextEdit
 {
-    // Q_OBJECT
 
   public:
     TextEditor(QWidget *parent = nullptr);
     ~TextEditor();
 
-    void                      SetCompleter(QCompleter *c);
-    [[nodiscard]] QCompleter *Completer() const;
-
-  protected:
-    void keyPressEvent(QKeyEvent *e) override;
-    void focusInEvent(QFocusEvent *e) override;
+  public:
+    bool eventFilter(QObject *obj, QEvent *ev) override;
+    void showSuggestion(const QVector<QString> &choices);
 
   private slots:
-    void insertCompletion(const QString &completion);
+
+    void onTextChanged();
+    void doneCompletion();
 
   private:
-    [[nodiscard]] QString textUnderCursor() const;
-
-  private:
-    QCompleter *c = nullptr;
+    QTreeWidget *word_list;
 };

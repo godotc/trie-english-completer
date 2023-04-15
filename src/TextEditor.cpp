@@ -1,114 +1,186 @@
 #include "TextEditor.h"
+
+#include "qabstractitemmodel.h"
 #include "qabstractitemview.h"
+#include "qchar.h"
+#include "qcolor.h"
 #include "qcompleter.h"
+#include "qcoreevent.h"
+#include "qevent.h"
+#include "qframe.h"
 #include "qglobal.h"
+#include "qlistview.h"
 #include "qnamespace.h"
-#include "qwidget.h"
-#include <QKeyEvent>
-#include <qscrollbar.h>
+#include "qpalette.h"
+#include "qscrollbar.h"
+#include "qsize.h"
+#include "qstringliteral.h"
+#include "qtextcursor.h"
+#include "qtreewidget.h"
+#include <qdebug.h>
+#include <qheaderview.h>
+#include <qrect.h>
+#include <qstringlistmodel.h>
 
 TextEditor::TextEditor(QWidget *parent)
-    : QTextEdit(parent)
+    : QPlainTextEdit(parent)
 {
-    setPlainText(tr("This TextEdit provides autocompletions for words that have more than"
-                    " 3 characters. You can trigger autocompletion using ") +
-                 QKeySequence("Ctrl+E").toString(QKeySequence::NativeText));
+    word_list = new QTreeWidget();
+    word_list->setWindowFlags(Qt::Popup);
+    word_list->setFocusPolicy(Qt::NoFocus);
+    word_list->setMouseTracking(true);
+    word_list->setColumnCount(1);
+    word_list->setUniformRowHeights(true);
+    word_list->setRootIsDecorated(false);
+    word_list->setSelectionBehavior(QTreeWidget::SelectRows);
+    word_list->setFrameStyle(QFrame::Box | QFrame::Plain);
+    word_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    word_list->header()->hide();
+
+    word_list->installEventFilter(this);
+
+
+    connect(this, &QPlainTextEdit::textChanged, this, &TextEditor::onTextChanged);
+
+    connect(word_list, &QTreeWidget::itemClicked, this, &TextEditor::doneCompletion);
 }
 
-TextEditor::~TextEditor() {}
-
-
-void TextEditor::SetCompleter(QCompleter *completer)
+TextEditor::~TextEditor()
 {
-    if (c)
-        c->disconnect(this);
-
-    c = completer;
-
-    if (!c)
-        return;
-
-    c->setWidget(this);
-    c->setCompletionMode(QCompleter::PopupCompletion);
-    c->setCaseSensitivity(Qt::CaseInsensitive);
-
-    connect(c, QOverload<const QString &>::of(&QCompleter::activated), this, &TextEditor::insertCompletion);
-}
-
-
-QCompleter *TextEditor::Completer() const { return c; }
-
-void TextEditor::insertCompletion(const QString &completion)
-{
-    if (c->widget() != this)
-        return;
-
-    QTextCursor tc = textCursor();
-
-    int extra = completion.length() - c->completionPrefix().length();
-
-    tc.movePosition(QTextCursor::Left);
-    tc.movePosition(QTextCursor::EndOfWord);
-    tc.insertText(completion.right(extra));
-    setTextCursor(tc);
-}
-
-QString TextEditor::textUnderCursor() const
-{
-    QTextCursor tc = textCursor();
-    tc.select(QTextCursor::WordUnderCursor);
-    return tc.selectedText();
-}
-
-void TextEditor::focusInEvent(QFocusEvent *e)
-{
-    if (c)
-        c->setWidget(this);
-    QTextEdit::focusInEvent(e);
+    delete word_list;
+    qDebug() << "~TextEditor";
 }
 
 
-void TextEditor::keyPressEvent(QKeyEvent *e)
+bool TextEditor::eventFilter(QObject *obj, QEvent *ev)
 {
-    if (c && c->popup()->isVisible())
-    {
-        switch (e->key())
-        {
+    if (obj != word_list)
+        return false;
+
+
+    if (ev->type() == QEvent::MouseButtonPress) {
+        word_list->hide();
+        this->setFocus();
+        return true;
+    }
+
+    auto c = textCursor();
+
+    if (ev->type() == QEvent::KeyPress) {
+        bool consumed = false;
+
+        int key = static_cast<QKeyEvent *>(ev)->key();
+
+        switch (key) {
         case Qt::Key_Enter:
         case Qt::Key_Return:
-        case Qt::Key_Escape:
         case Qt::Key_Tab:
-        case Qt::Key_Backtab:
-            e->ignore();
-            return; // let the completer do default behavior
+            doneCompletion();
+            consumed = true;
+            break;
+
+        // case Qt::Key_Space:
+        //     c.insertText(" ");
+        case Qt::Key_Escape:
+            this->setFocus();
+            word_list->hide();
+            consumed = true;
+            break;
+
+        case Qt::Key_Up:
+        case Qt::Key_Down:
+        case Qt::Key_Home:
+        case Qt::Key_End:
+        case Qt::Key_PageUp:
+        case Qt::Key_PageDown:
+            break;
+
         default:
+            this->setFocus();
+            this->event(ev);
+            word_list->hide();
             break;
         }
+
+        return consumed;
     }
 
+    return false;
+}
 
-    // I want always do complete
-    const bool isShortcut = (e->modifiers().testFlag(Qt::ControlModifier) && e->key() == Qt::Key_P); // CTRL+P
 
-    const bool ctrlOrShift = e->modifiers().testFlag(Qt::ControlModifier) ||
-                             e->modifiers().testFlag(Qt::ShiftModifier);
-    if (!c || (ctrlOrShift && e->text().isEmpty()))
+void TextEditor::showSuggestion(const QVector<QString> &choices)
+{
+    if (choices.isEmpty())
         return;
 
-    static QString eow("~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-="); // end of word
-    const bool     hasModifier      = (e->modifiers() != Qt::NoModifier) && !ctrlOrShift;
-    QString        completionPrefix = textUnderCursor();
+    const QPalette &palette = this->palette();
+    QColor          color   = palette.color(QPalette::Disabled, QPalette::WindowText);
 
-    if (!isShortcut && (hasModifier || e->text().isEmpty() || completionPrefix.length() < 3 || eow.contains(e->text().right(1)))) {
-        c->popup()->hide();
+    // word_list->setUpdatesEnabled(false);
+    word_list->clear();
+
+    for (const auto &word : choices)
+    {
+        auto item = new QTreeWidgetItem(word_list);
+        item->setText(0, word);
+        item->setForeground(0, color);
+    }
+    word_list->setCurrentItem(word_list->topLevelItem(0));
+    word_list->resizeColumnToContents(0);
+
+    // word_list->setUpdatesEnabled(true);
+
+    auto cr = cursorRect();
+    word_list->move(this->mapToGlobal(cr.bottomLeft()));
+
+    // word_list->setFocus();
+
+    word_list->show();
+    this->setFocus();
+}
+
+void TextEditor::doneCompletion()
+{
+    word_list->hide();
+    this->setFocus();
+    QTreeWidgetItem *item = word_list->currentItem();
+
+    if (item) {
+        auto word = item->text(0);
+
+        auto c = textCursor();
+
+        c.movePosition(QTextCursor::StartOfWord, QTextCursor::KeepAnchor);
+        c.removeSelectedText();
+        c.insertText(word);
+    }
+}
+
+void TextEditor::onTextChanged()
+{
+    word_list->hide();
+
+    auto cursor = textCursor();
+    cursor.movePosition(QTextCursor::StartOfWord, QTextCursor::KeepAnchor);
+
+    if (cursor.atEnd()) {
         return;
     }
 
-    if (completionPrefix != c->completionPrefix()) {
-        c->setCompletionPrefix(completionPrefix);
-        c->popup()->setCurrentIndex(c->completionModel()->index(0, 0));
+    QString prefix = cursor.selectedText().trimmed();
+    qDebug() << "Prefix = " << prefix;
+
+    if (prefix.isEmpty() || !prefix.back().isLetter()) {
+        return;
     }
-    QRect cr = cursorRect();
-    cr.setWidth(c->popup()->sizeHintForColumn(0) + c->popup()->verticalScrollBar()->sizeHint().width());
-    c->complete(cr); // popup it up!
+
+    QVector<QString> successors;
+
+    successors << "hello"
+               << "world";
+
+    if (!successors.empty()) {
+        showSuggestion(successors);
+    }
 }

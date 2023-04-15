@@ -26,16 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     createMenu();
 
 
-    this->textEditor = new TextEditor;
-
-    completer = new QCompleter(this);
-    completer->setModel(modelFromFile(":/res/english-words.txt"));
-    completer->setModelSorting(QCompleter::CaseInsensitivelySortedModel);
-    completer->setCaseSensitivity(Qt::CaseInsensitive);
-    completer->setWrapAround(false);
-
-    this->textEditor->SetCompleter(completer);
-
+    this->textEditor = new TextEditor(this);
 
     setCentralWidget(textEditor);
     resize(800, 600);
@@ -44,7 +35,6 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    // delete ui;
 }
 
 void MainWindow::createMenu()
@@ -66,114 +56,8 @@ void MainWindow::createMenu()
 }
 
 
-auto MainWindow::modelFromFile(const QString &fileName) -> QAbstractItemModel *
-{
-    QFile file(fileName);
-    if (!file.open(QFile::ReadOnly))
-        return new QStringListModel(completer);
-
-#ifndef QT_NO_CUROR
-    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-#endif
-
-    QStringList words;
-
-    while (!file.atEnd()) {
-        QByteArray line = file.readLine();
-        if (!line.isEmpty()) {
-            words << QString::fromUtf8(line.trimmed());
-        }
-    }
-
-#ifndef QT_NO_CUROR
-    QGuiApplication::restoreOverrideCursor();
-#endif
-
-    return new QStringListModel(words, completer);
-}
-
 void MainWindow::about()
 {
-    QMessageBox::about(this, tr("About"), tr("This example demonstrates the "
-                                             "different features of the QCompleter class."));
+    QMessageBox::about(this, tr("About"), tr("Author: @godot42"
+                                             "Email: disyourself@qq.com"));
 }
-
-/*
-    void MainWindow::onTextChanged()
-    {
-        textEdit->setFocus();
-        wordList->show();
-
-        QTextCursor cursor = textEdit->textCursor();
-        cursor.movePosition(QTextCursor::StartOfWord, QTextCursor::KeepAnchor);
-
-        if (cursor.atEnd()) {
-            qDebug() << "cursor is not within a word currently, hide";
-            wordList->hide();
-            return;
-        }
-
-        QString prefix = cursor.selectedText().trimmed();
-        qDebug() << "Prefix = " << prefix;
-
-        if (prefix.isEmpty()) {
-            qDebug() << "prefix is empty , hide";
-            wordList->hide();
-            return;
-        }
-        if (!prefix.back().isLetter()) {
-            qDebug() << "previous one character not word, hide";
-            wordList->hide();
-            return;
-        }
-        // If the last character of the prefix is a space, hide the list widget
-        if (prefix.back() == ' ') {
-            qDebug() << "previous one character is space ' ', hide";
-            wordList->hide();
-            return;
-        }
-
-
-        QStringList successors = QStringList({"hello", "world"});
-
-        if (!successors.isEmpty()) {
-            qDebug() << "successors not empty";
-
-            wordList->clear();
-            wordList->addItems(successors);
-
-            // prompt pannel position change
-            QRect  cursorRect = textEdit->cursorRect(cursor);
-            QPoint popupPos   = cursorRect.bottomLeft();
-            popupPos.setY(popupPos.y() + 2);
-            wordList->move(textEdit->mapToGlobal(popupPos));
-
-            wordList->showPopup();
-        }
-        else {
-            wordList->hide();
-            return;
-        }
-    }
-
-    void MainWindow::onSuccessorClicked(int index)
-    {
-        auto *wordList  = qobject_cast<QComboBox *>(sender());
-        auto  successor = wordList->itemText(index);
-        auto  cursor    = textEdit->textCursor();
-
-        // replace prefix with complete word
-        cursor.movePosition(QTextCursor::StartOfWord, QTextCursor::KeepAnchor);
-        cursor.removeSelectedText();
-        cursor.insertText(successor);
-
-        wordList->hide();
-        textEdit->setFocus();
-    }
-
-    void MainWindow::onWordListHighlighted(const QString &text)
-    {
-        Q_UNUSED(text);
-        textEdit->setFocus();
-    }
-*/
