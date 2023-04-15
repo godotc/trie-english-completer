@@ -4,6 +4,8 @@ build/
 
 # MacOS Cache
 .DS_Store
-.cache
 
+# cland
+.cache
+compile_commands*
 
