@@ -29,13 +29,16 @@ TextEditor::TextEditor(QWidget *parent)
     word_list->setWindowFlags(Qt::Popup);
     word_list->setFocusPolicy(Qt::NoFocus);
     word_list->setMouseTracking(true);
-    word_list->setColumnCount(1);
     word_list->setUniformRowHeights(true);
     word_list->setRootIsDecorated(false);
     word_list->setSelectionBehavior(QTreeWidget::SelectRows);
     word_list->setFrameStyle(QFrame::Box | QFrame::Plain);
     word_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     word_list->header()->hide();
+
+    word_list->setColumnCount(1);
+    word_list->setMaximumHeight(150);
+    word_list->setMaximumWidth(80);
 
     word_list->installEventFilter(this);
 
@@ -79,8 +82,6 @@ bool TextEditor::eventFilter(QObject *obj, QEvent *ev)
             consumed = true;
             break;
 
-        // case Qt::Key_Space:
-        //     c.insertText(" ");
         case Qt::Key_Escape:
             this->setFocus();
             word_list->hide();
@@ -96,9 +97,9 @@ bool TextEditor::eventFilter(QObject *obj, QEvent *ev)
             break;
 
         default:
-            this->setFocus();
+            // this->setFocus();
             this->event(ev);
-            word_list->hide();
+            // word_list->hide();
             break;
         }
 
@@ -115,7 +116,8 @@ void TextEditor::showSuggestion(const QVector<QString> &choices)
         return;
 
     const QPalette &palette = this->palette();
-    QColor          color   = palette.color(QPalette::Disabled, QPalette::WindowText);
+
+    QColor color = palette.color(QPalette::Disabled, QPalette::WindowText);
 
     // word_list->setUpdatesEnabled(false);
     word_list->clear();
@@ -134,16 +136,12 @@ void TextEditor::showSuggestion(const QVector<QString> &choices)
     auto cr = cursorRect();
     word_list->move(this->mapToGlobal(cr.bottomLeft()));
 
-    // word_list->setFocus();
-
     word_list->show();
-    this->setFocus();
 }
 
 void TextEditor::doneCompletion()
 {
     word_list->hide();
-    this->setFocus();
     QTreeWidgetItem *item = word_list->currentItem();
 
     if (item) {
