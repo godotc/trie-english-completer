@@ -48,8 +48,42 @@ class TrieTree
     {
         std::vector<std::string> ret;
 
+        auto node = &_root;
+
+        int n = prefix.size();
+        int i = 0;
+        for (; i < n; ++i) {
+            char ch = prefix[i];
+
+            if (node->get()->HasChild(ch)) {
+                node = node->get()->GetChildNode(ch);
+            }
+            else break;
+        }
+        if (i != n - 1) return ret;
+
+        getSuccessorsFromNode(prefix, node, ret);
+
 
         return ret;
+    }
+
+
+  private:
+    void getSuccessorsFromNode(const std::string &prefix, const std::unique_ptr<TrieNode> *node, std::vector<std::string> &ret)
+    {
+        if (!node->get()->HasChildren()) return;
+        for (char ch = 'a'; ch <= 'z'; ++ch) {
+            if (node->get()->HasChild(ch))
+            {
+                auto tnode = node->get()->GetChildNode(ch);
+                if (tnode->get()->IsEndNode())
+                {
+                    ret.emplace_back(prefix + tnode->get()->GetKeyChar());
+                }
+                getSuccessorsFromNode(prefix + ch, tnode, ret);
+            }
+        }
     }
 
 

@@ -28,7 +28,7 @@ class TrieNode
 
   public:
     bool HasChild(char c) const { return _chilren.find(c) != _chilren.end(); }
-    bool HasChildren(char c) const { return !_chilren.empty(); }
+    bool HasChildren() const { return !_chilren.empty(); }
     bool IsEndNode() const { return _is_end; }
 
     char GetKeyChar() const { return _key_char; }
