@@ -60,7 +60,7 @@ class TrieTree
             }
             else break;
         }
-        if (i != n - 1) return ret;
+        if (i != n) return ret;
 
         getSuccessorsFromNode(prefix, node, ret);
 
@@ -73,19 +73,20 @@ class TrieTree
     void getSuccessorsFromNode(const std::string &prefix, const std::unique_ptr<TrieNode> *node, std::vector<std::string> &ret)
     {
         if (!node->get()->HasChildren()) return;
-        for (char ch = 'a'; ch <= 'z'; ++ch) {
-            if (node->get()->HasChild(ch))
-            {
-                auto tnode = node->get()->GetChildNode(ch);
-                if (tnode->get()->IsEndNode())
-                {
-                    ret.emplace_back(prefix + tnode->get()->GetKeyChar());
-                }
-                getSuccessorsFromNode(prefix + ch, tnode, ret);
-            }
+        const auto Chilren = node->get()->GetChilren();
+
+
+        // TODO: compile error
+        for (const auto &child : Chilren)
+        {
+            char        key        = child.first;
+            std::string t          = prefix + key;
+            const auto  child_node = node->get()->GetChildNode(key);
+
+            ret.emplace_back(t);
+            getSuccessorsFromNode(t, child_node, ret);
         }
     }
-
 
 
   private:

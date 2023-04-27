@@ -61,6 +61,11 @@ class TrieNode
 
     void SetEndNode(bool is_end) { _is_end = is_end; };
 
+    const auto GetChilren()
+    {
+        return _chilren;
+    }
+
   private:
     char _key_char;
     bool _is_end;
