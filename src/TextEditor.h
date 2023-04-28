@@ -9,8 +9,10 @@
 #include <QCompleter>
 #include <QObject>
 #include <QTreeWidget>
+#include <memory>
 #include <qplaintextedit.h>
 
+#include <TrieTree.h>
 
 
 class TextEditor : public QPlainTextEdit
@@ -30,5 +32,6 @@ class TextEditor : public QPlainTextEdit
     void doneCompletion();
 
   private:
-    QTreeWidget *word_list;
+    QTreeWidget                    *word_list;
+    std::unique_ptr<trie::TrieTree> trie;
 };

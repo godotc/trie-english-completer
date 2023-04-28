@@ -63,7 +63,7 @@ class TrieNode
 
     const auto GetChilren()
     {
-        return _chilren;
+        return &_chilren;
     }
 
   private:

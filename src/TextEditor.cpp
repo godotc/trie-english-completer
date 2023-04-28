@@ -1,5 +1,6 @@
 #include "TextEditor.h"
 
+#include "TrieTree.h"
 #include "qabstractitemmodel.h"
 #include "qabstractitemview.h"
 #include "qchar.h"
@@ -17,10 +18,12 @@
 #include "qstringliteral.h"
 #include "qtextcursor.h"
 #include "qtreewidget.h"
+#include <memory>
 #include <qdebug.h>
 #include <qheaderview.h>
 #include <qrect.h>
 #include <qstringlistmodel.h>
+
 
 TextEditor::TextEditor(QWidget *parent)
     : QPlainTextEdit(parent)
@@ -41,6 +44,9 @@ TextEditor::TextEditor(QWidget *parent)
     word_list->setMaximumWidth(80);
 
     word_list->installEventFilter(this);
+
+    trie = std::make_unique<trie::TrieTree>();
+    trie.get()->SourceFromFile(":/res/english-words.txt", 0);
 
 
     connect(this, &QPlainTextEdit::textChanged, this, &TextEditor::onTextChanged);
@@ -173,10 +179,9 @@ void TextEditor::onTextChanged()
         return;
     }
 
-    QVector<QString> successors;
+    QVector<QString> successors  trie.get()->GetSuccessors(prefix.data());
 
-    successors << "hello"
-               << "world";
+
 
     if (!successors.empty()) {
         showSuggestion(successors);
