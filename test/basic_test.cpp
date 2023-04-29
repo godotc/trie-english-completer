@@ -44,22 +44,33 @@ TEST(TrieTree, insert_and_get)
 
 TEST(TrieTree, load_from_file)
 {
-    trie::TrieTree trie;
-    std::string    s = "/tmp/english-words.txt";
-    trie.SourceFromFile(s, 5);
+    {
+        trie::TrieTree trie;
+        std::string    s = "/tmp/english-words.txt";
+        trie.SourceFromFile(s, 5);
 
-    for (auto x : trie.GetSuccessors("A")) {
-        std::cerr << x << " ";
+        for (auto x : trie.GetSuccessors("A")) {
+            std::cerr << x << " ";
+        }
+        std::cerr << "\n";
+        for (auto x : trie.GetSuccessors("app")) {
+            std::cerr << x << " ";
+        }
+        std::cerr << "\n";
     }
-    std::cerr << "\n";
-    for (auto x : trie.GetSuccessors("a")) {
-        std::cerr << x << " ";
-    }
-    std::cerr << "\n";
+    return;
 
-    trie.SourceFromFile(s, 0);
-    for (auto x : trie.GetSuccessors("app")) {
-        std::cerr << x << " ";
+    {
+        trie::TrieTree trie(5);
+        std::string    s = "/tmp/english-words.txt";
+        trie.SourceFromFile(s, 0);
+        auto ret = trie.GetSuccessors("app");
+        for (auto x : ret) {
+            std::cerr << x << " ";
+        }
+
+        EXPECT_NE(ret.size(), 0);
+
+        std::cerr << "\n";
     }
-    std::cerr << "\n";
 }

@@ -1,7 +1,9 @@
 #pragma once
 
 #include "TrieNode.h"
+#include <atomic>
 #include <cctype>
+#include <cstddef>
 #include <cstdio>
 #include <exception>
 #include <fstream>
@@ -22,9 +24,10 @@ namespace trie {
 class TrieTree
 {
   public:
-    TrieTree()
+    explicit TrieTree(int outSize = 5)
     {
-        _root = std::make_unique<TrieNode>('\0');
+        _root           = std::make_unique<TrieNode>('\0');
+        this->m_Outsize = outSize;
     }
 
   public:
@@ -71,13 +74,20 @@ class TrieTree
         }
         if (i != n) return ret;
 
-        getSuccessorsFromNode(prefix, node, ret);
+        // BUG:  may multiple recursion make it be negative, and make it as UINT_32_MAX
+        // So it cannot be uint or size_t, int will be useful here
+        // size_t count = m_Outsize;
+        // BUG: assign a uint to int will also make overflow
+        int count = m_Outsize;
+        std::cout << "Init count: " << count << std::endl;
+
+        getSuccessorsFromNode(prefix, node, ret, count);
 
 
         return ret;
     }
 
-    void SourceFromFile(const char *FileName, int n)
+    void SourceFromFile(const std::string &FileName, int n = 0)
     {
 
         std::ifstream ifs(FileName);
@@ -108,10 +118,17 @@ class TrieTree
 
 
   private:
-    void
-    getSuccessorsFromNode(const std::string &prefix, const std::unique_ptr<TrieNode> *node, std::vector<std::string> &ret)
+    void getSuccessorsFromNode(const std::string &prefix, const std::unique_ptr<TrieNode> *node, std::vector<std::string> &ret, int &count)
     {
-        if (node->get()->IsEndNode()) ret.push_back(prefix);
+        // TODO: fix no insert here
+        if (node->get()->IsEndNode()) {
+            ret.push_back(prefix);
+            --count;
+            std::cout << "Prefix:" << prefix << " Left " << count << std::endl;
+            if (count <= 0) return; // BUG: ==0 overflow
+        }
+
+
         if (!node->get()->HasChildren()) return;
 
         const auto Children = node->get()->GetChilren();
@@ -122,7 +139,7 @@ class TrieTree
             std::string t          = prefix + key;
             const auto  child_node = node->get()->GetChildNode(key);
 
-            getSuccessorsFromNode(t, child_node, ret);
+            getSuccessorsFromNode(t, child_node, ret, count);
         }
     }
 
@@ -131,5 +148,7 @@ class TrieTree
     std::unique_ptr<TrieNode> _root;
 
     std::mutex mtx;
+
+    int m_Outsize = 5;
 };
 } // namespace trie

@@ -179,7 +179,8 @@ void TextEditor::onTextChanged()
         return;
     }
 
-    QVector<QString> successors  trie.get()->GetSuccessors(prefix.data());
+    QVector<QString> successors = {"hello", "world"};
+    // QVector<QString> successors  trie.get()->GetSuccessors(prefix.data());
 
 
 
