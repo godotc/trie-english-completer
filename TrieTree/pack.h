@@ -8,9 +8,7 @@ class PackTrie : public TrieTree
 {
 
   public:
-    explicit PackTrie(int outsize = 5) : TrieTree(outsize)
-    {
-    }
+    explicit PackTrie(int outsize = 5) : TrieTree(outsize) {}
 
 
   public:
@@ -24,9 +22,9 @@ class PackTrie : public TrieTree
         Insert(word);
     }
 
-    void GetSuccersorsP(const char *prefix)
+    auto GetSuccersorsP(const char *prefix)
     {
-        GetSuccessors(prefix);
+        return GetSuccessors(prefix);
     }
 };
 

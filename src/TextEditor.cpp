@@ -1,6 +1,5 @@
 #include "TextEditor.h"
 
-#include "TrieTree.h"
 #include "qabstractitemmodel.h"
 #include "qabstractitemview.h"
 #include "qchar.h"
@@ -18,12 +17,14 @@
 #include "qstringliteral.h"
 #include "qtextcursor.h"
 #include "qtreewidget.h"
+#include "qvector.h"
 #include <memory>
 #include <qdebug.h>
 #include <qheaderview.h>
 #include <qrect.h>
 #include <qstringlistmodel.h>
 
+#include <pack.h>
 
 TextEditor::TextEditor(QWidget *parent)
     : QPlainTextEdit(parent)
@@ -45,8 +46,7 @@ TextEditor::TextEditor(QWidget *parent)
 
     word_list->installEventFilter(this);
 
-    trie = std::make_unique<trie::TrieTree>();
-    trie.get()->SourceFromFile(":/res/english-words.txt", 0);
+    this->InitTrie();
 
 
     connect(this, &QPlainTextEdit::textChanged, this, &TextEditor::onTextChanged);
@@ -60,6 +60,11 @@ TextEditor::~TextEditor()
     qDebug() << "~TextEditor";
 }
 
+void TextEditor::InitTrie()
+{
+    trie = std::make_unique<trie::PackTrie>(6);
+    trie.get()->SourceFromFile(":/res/english-words.txt");
+}
 
 bool TextEditor::eventFilter(QObject *obj, QEvent *ev)
 {
@@ -179,7 +184,7 @@ void TextEditor::onTextChanged()
         return;
     }
 
-    QVector<QString> successors = {"hello", "world"};
+    QVector<QString> successors = GetSuggestions(prefix);
     // QVector<QString> successors  trie.get()->GetSuccessors(prefix.data());
 
 
@@ -187,4 +192,15 @@ void TextEditor::onTextChanged()
     if (!successors.empty()) {
         showSuggestion(successors);
     }
+}
+QVector<QString> TextEditor::GetSuggestions(QString &prefix)
+{
+    QVector<QString> ret;
+    auto             strs = trie.get()->GetSuccessors(prefix.toStdString());
+
+    for (auto &x : strs) {
+        ret.push_back(QString::fromStdString(x));
+    }
+
+    return ret;
 }

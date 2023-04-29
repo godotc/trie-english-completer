@@ -31,6 +31,35 @@ class TrieTree
     }
 
   public:
+
+    void SourceFromFile(const std::string &FileName, int n = 0)
+    {
+
+        std::ifstream ifs(FileName);
+        if (ifs.fail() || !ifs.is_open()) {
+            std::cerr << "Open file " << FileName << "Failed!" << std::endl;
+        }
+
+        uint size = 32;
+        char word[32];
+        int  count = 0;
+
+        while (ifs.getline(word, size)) {
+            int len = sizeof(word);
+            if (len > 1 && std::islower(word[1])) {
+                for (int i = 0; i < len; ++i) {
+                    word[i] = tolower(word[i]);
+                }
+            }
+
+            this->Insert(word);
+            ++count;
+            if (n != 0 && count == n) break;
+        }
+
+        printf("Load %d word of dataset\n", count);
+    }
+
     bool Insert(const std::string &key)
     {
         auto node = &_root;
@@ -78,7 +107,8 @@ class TrieTree
         // So it cannot be uint or size_t, int will be useful here
         // size_t count = m_Outsize;
         // BUG: assign a uint to int will also make overflow
-        int count = m_Outsize;
+        // int count = m_Outsize;
+        std::atomic<int> count(m_Outsize);
         std::cout << "Init count: " << count << std::endl;
 
         getSuccessorsFromNode(prefix, node, ret, count);
@@ -87,45 +117,17 @@ class TrieTree
         return ret;
     }
 
-    void SourceFromFile(const std::string &FileName, int n = 0)
-    {
-
-        std::ifstream ifs(FileName);
-        if (ifs.fail() || !ifs.is_open()) {
-            std::cerr << "Open file " << FileName << "Failed!" << std::endl;
-        }
-
-        uint size = 32;
-        char word[32];
-        int  count = 0;
-
-        while (ifs.getline(word, size)) {
-            int len = sizeof(word);
-            if (len > 1 && std::islower(word[1])) {
-                for (int i = 0; i < len; ++i) {
-                    word[i] = tolower(word[i]);
-                }
-            }
-
-            this->Insert(word);
-            ++count;
-            if (n != 0 && count == n) break;
-        }
-
-        printf("Load %d word of dataset\n", count);
-    }
-
 
 
   private:
-    void getSuccessorsFromNode(const std::string &prefix, const std::unique_ptr<TrieNode> *node, std::vector<std::string> &ret, int &count)
+    void getSuccessorsFromNode(const std::string &prefix, const std::unique_ptr<TrieNode> *node, std::vector<std::string> &ret, std::atomic<int> &count)
     {
-        // TODO: fix no insert here
+        if (count <= 0) return; // BUG: ==0 overflow
         if (node->get()->IsEndNode()) {
             ret.push_back(prefix);
             --count;
-            std::cout << "Prefix:" << prefix << " Left " << count << std::endl;
             if (count <= 0) return; // BUG: ==0 overflow
+            std::cout << "Prefix:" << prefix << " Left " << count << std::endl;
         }
 
 

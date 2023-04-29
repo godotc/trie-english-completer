@@ -58,11 +58,11 @@ TEST(TrieTree, load_from_file)
         }
         std::cerr << "\n";
     }
-    return;
 
     {
         trie::TrieTree trie(5);
         std::string    s = "/tmp/english-words.txt";
+
         trie.SourceFromFile(s, 0);
         auto ret = trie.GetSuccessors("app");
         for (auto x : ret) {

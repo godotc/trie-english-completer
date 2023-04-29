@@ -1,5 +1,7 @@
 #pragma once
 
+#include <pack.h>
+
 #include "qabstractitemview.h"
 #include "qcoreevent.h"
 #include "qlistview.h"
@@ -12,7 +14,6 @@
 #include <memory>
 #include <qplaintextedit.h>
 
-#include <TrieTree.h>
 
 
 class TextEditor : public QPlainTextEdit
@@ -26,6 +27,11 @@ class TextEditor : public QPlainTextEdit
     bool eventFilter(QObject *obj, QEvent *ev) override;
     void showSuggestion(const QVector<QString> &choices);
 
+  public:
+    QVector<QString> GetSuggestions(QString &prefix);
+    void             InitTrie();
+
+
   private slots:
 
     void onTextChanged();
@@ -33,5 +39,5 @@ class TextEditor : public QPlainTextEdit
 
   private:
     QTreeWidget                    *word_list;
-    std::unique_ptr<trie::TrieTree> trie;
+    std::unique_ptr<trie::PackTrie> trie;
 };
