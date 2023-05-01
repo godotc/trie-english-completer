@@ -18,6 +18,10 @@
 #include "qtextcursor.h"
 #include "qtreewidget.h"
 #include "qvector.h"
+#include <algorithm>
+#include <bits/chrono.h>
+#include <chrono>
+#include <cstddef>
 #include <memory>
 #include <qdebug.h>
 #include <qheaderview.h>
@@ -25,6 +29,7 @@
 #include <qstringlistmodel.h>
 
 #include <pack.h>
+#include <stdexcept>
 
 TextEditor::TextEditor(QWidget *parent)
     : QPlainTextEdit(parent)
@@ -47,6 +52,7 @@ TextEditor::TextEditor(QWidget *parent)
     word_list->installEventFilter(this);
 
     this->InitTrie();
+    trie.get()->SetListSize(10);
 
 
     connect(this, &QPlainTextEdit::textChanged, this, &TextEditor::onTextChanged);
@@ -63,7 +69,30 @@ TextEditor::~TextEditor()
 void TextEditor::InitTrie()
 {
     trie = std::make_unique<trie::PackTrie>(6);
-    trie.get()->SourceFromFile(":/res/english-words.txt");
+
+    auto start = std::chrono::steady_clock::now();
+
+    QFile f(":/res/english-words.txt");
+    if (!f.open(QIODevice::ReadOnly)) {
+        qDebug() << "Failed to open";
+        throw std::runtime_error("Failed to open dataset file.");
+    }
+    int  n = 0;
+    char word[32];
+    while (size_t size = f.readLine(word, 32))
+    {
+        if (size == -1) break;
+        word[size - 1] = '\0';
+        trie.get()->Insert(word);
+        // qDebug() << ;
+        ++n;
+    }
+    qDebug() << "Load " << n << " words from data set";
+
+    auto end      = std::chrono::steady_clock::now();
+    auto duration = end - start;
+    auto ms       = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+    qDebug() << "Total time: " << ms << " ms";
 }
 
 bool TextEditor::eventFilter(QObject *obj, QEvent *ev)
@@ -193,6 +222,7 @@ void TextEditor::onTextChanged()
         showSuggestion(successors);
     }
 }
+
 QVector<QString> TextEditor::GetSuggestions(QString &prefix)
 {
     QVector<QString> ret;
@@ -201,6 +231,8 @@ QVector<QString> TextEditor::GetSuggestions(QString &prefix)
     for (auto &x : strs) {
         ret.push_back(QString::fromStdString(x));
     }
+
+    std::sort(ret.begin(), ret.end(), [ret](QString &A, QString &B) { return A.size() < B.size(); });
 
     return ret;
 }

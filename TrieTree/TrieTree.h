@@ -2,7 +2,9 @@
 
 #include "TrieNode.h"
 #include <atomic>
+#include <bits/types/FILE.h>
 #include <cctype>
+#include <climits>
 #include <cstddef>
 #include <cstdio>
 #include <exception>
@@ -34,7 +36,6 @@ class TrieTree
 
     void SourceFromFile(const std::string &FileName, int n = 0)
     {
-
         std::ifstream ifs(FileName);
         if (ifs.fail() || !ifs.is_open()) {
             std::cerr << "Open file " << FileName << "Failed!" << std::endl;
@@ -57,15 +58,18 @@ class TrieTree
             if (n != 0 && count == n) break;
         }
 
-        printf("Load %d word of dataset\n", count);
+        printf("Load %d words from dataset\n", count);
     }
+
+
 
     bool Insert(const std::string &key)
     {
+        std::lock_guard<std::mutex> lock(mtx);
+
         auto node = &_root;
         auto ptr  = node;
 
-        std::lock_guard<std::mutex> lock(mtx);
 
         for (auto c : key)
         {
@@ -117,6 +121,13 @@ class TrieTree
         return ret;
     }
 
+    void SetListSize(int listSize)
+    {
+        if (listSize == -1) return;
+        if (listSize >= INT_MAX) return;
+
+        m_Outsize = listSize;
+    }
 
 
   private:
@@ -127,7 +138,7 @@ class TrieTree
             ret.push_back(prefix);
             --count;
             if (count <= 0) return; // BUG: ==0 overflow
-            std::cout << "Prefix:" << prefix << " Left " << count << std::endl;
+            // std::cout << "Prefix:" << prefix << " Left " << count << std::endl;
         }
 
 

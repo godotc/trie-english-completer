@@ -2,7 +2,11 @@
 #include "gtest/gtest.h"
 #include <TrieTree.h>
 #include <algorithm>
+#include <bits/chrono.h>
+#include <chrono>
+#include <cstdlib>
 #include <iostream>
+#include <ratio>
 #include <set>
 #include <string>
 #include <vector>
@@ -63,7 +67,17 @@ TEST(TrieTree, load_from_file)
         trie::TrieTree trie(5);
         std::string    s = "/tmp/english-words.txt";
 
+        auto now = std::chrono::steady_clock::now();
+
         trie.SourceFromFile(s, 0);
+
+        auto end      = std::chrono::steady_clock::now();
+        auto duration = end - now;
+
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        std::cerr << "==============Total time:" << ms << " ms" << std::endl;
+
+
         auto ret = trie.GetSuccessors("app");
         for (auto x : ret) {
             std::cerr << x << " ";
